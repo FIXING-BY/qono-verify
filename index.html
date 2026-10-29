@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Qono Verify</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg1:#dcecff;--bg2:#f6faff;--blob:#9cc9ff;--glass:rgba(255,255,255,.55);--glass2:rgba(255,255,255,.75);--edge:rgba(255,255,255,.9);--text:#1c2a44;--muted:#6f84a6;--accent:#5a9cf6;--accent2:#9dccff;--danger:#e5646a;--shadow:rgba(90,140,210,.22)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg1:#0b1424;--bg2:#101c33;--blob:#2a5fb0;--glass:rgba(255,255,255,.07);--glass2:rgba(255,255,255,.12);--edge:rgba(255,255,255,.14);--text:#eaf2ff;--muted:#8fa6c9;--accent:#6aaaff;--accent2:#3b74c9;--shadow:rgba(0,0,0,.4)}}
+:root[data-theme="dark"]{color-scheme:dark;--bg1:#0b1424;--bg2:#101c33;--blob:#2a5fb0;--glass:rgba(255,255,255,.07);--glass2:rgba(255,255,255,.12);--edge:rgba(255,255,255,.14);--text:#eaf2ff;--muted:#8fa6c9;--accent:#6aaaff;--accent2:#3b74c9;--shadow:rgba(0,0,0,.4)}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;background:linear-gradient(160deg,var(--bg1),var(--bg2))}
+.bg{position:fixed;inset:0;z-index:-1;overflow:hidden}
+.bg i{position:absolute;border-radius:50%;background:var(--blob);filter:blur(70px);opacity:.55}
+.bg i:nth-child(1){width:300px;height:300px;top:-80px;left:-90px}
+.bg i:nth-child(2){width:260px;height:260px;bottom:-60px;right:-80px;opacity:.4}
+.bg i:nth-child(3){width:180px;height:180px;top:45%;left:55%;opacity:.3}
+.wrap{max-width:480px;margin:0 auto;padding:22px 16px 120px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:26px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo,.av{border-radius:50%;background:linear-gradient(145deg,var(--accent2),var(--accent));color:#fff;display:grid;place-items:center;font-weight:600;flex:none}
+.logo{width:40px;height:40px;box-shadow:0 6px 16px -4px var(--shadow)}
+h1{font-size:19px;font-weight:600;margin:0;letter-spacing:-.2px}
+.glass{background:var(--glass);border:1px solid var(--edge);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 10px 30px -12px var(--shadow)}
+.icon{width:40px;height:40px;border-radius:50%;border:0;color:var(--muted);cursor:pointer;display:grid;place-items:center;font-size:18px}
+.item{border-radius:26px;padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:transform .12s}
+.item:active{transform:scale(.98)}
+.av{width:46px;height:46px;font-size:17px}
+.info{flex:1;min-width:0}
+.iss{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nm{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.code{font-size:28px;font-weight:600;letter-spacing:3px;font-variant-numeric:tabular-nums;margin-top:2px;color:var(--accent);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.code.warn{color:var(--danger)}
+.next{font-size:12px;color:var(--muted);margin-top:3px;letter-spacing:1px;font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;opacity:.85}
+.side{display:flex;flex-direction:column;align-items:center;gap:4px}
+.ring{position:relative;width:34px;height:34px}
+.ring svg{transform:rotate(-90deg);width:34px;height:34px}
+.ring circle{fill:none;stroke-width:3}
+.ring .bgc{stroke:var(--edge)}
+.ring .fg{stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset .5s linear}
+.ring span{position:absolute;inset:0;display:grid;place-items:center;font-size:10px;font-weight:600;color:var(--muted)}
+.del{background:none;border:0;color:var(--muted);font-size:11px;padding:3px 7px;border-radius:99px;cursor:pointer;opacity:.8}
+.del.sure{color:#fff;background:var(--danger);opacity:1}
+.empty{text-align:center;color:var(--muted);padding:70px 20px;font-size:14px}
+.empty .big{width:76px;height:76px;margin:0 auto 14px;font-size:30px}
+.fab{position:fixed;right:22px;bottom:calc(24px + env(safe-area-inset-bottom,0px));width:58px;height:58px;border-radius:50%;border:0;background:linear-gradient(145deg,var(--accent2),var(--accent));color:#fff;font-size:28px;cursor:pointer;box-shadow:0 12px 26px -8px var(--accent)}
+.modal{position:fixed;inset:0;background:rgba(20,40,80,.28);backdrop-filter:blur(5px);display:none;align-items:flex-end;justify-content:center;z-index:20}
+.modal.open{display:flex}
+.modal.full{align-items:center;background:linear-gradient(160deg,var(--bg1),var(--bg2));z-index:40}
+.sheet{width:100%;max-width:480px;border-radius:30px 30px 0 0;padding:20px 18px calc(22px + env(safe-area-inset-bottom,0px));max-height:92vh;overflow:auto;background:var(--glass2);border:1px solid var(--edge);backdrop-filter:blur(26px);-webkit-backdrop-filter:blur(26px)}
+.full .sheet{border-radius:30px;margin:16px;text-align:center}
+.tabs{display:flex;gap:4px;background:var(--glass);padding:4px;border-radius:99px;margin:14px 0}
+.tabs button{flex:1;border:0;background:none;color:var(--muted);padding:9px 4px;border-radius:99px;font-size:12px;font-weight:600;cursor:pointer}
+.tabs button.on{background:var(--glass2);color:var(--accent);box-shadow:0 2px 8px var(--shadow)}
+.pane{display:none}.pane.on{display:block}
+label{display:block;font-size:12px;color:var(--muted);margin:12px 0 5px 4px}
+input,textarea{width:100%;padding:13px 16px;border-radius:99px;border:1px solid var(--edge);background:var(--glass);color:var(--text);font-size:15px;outline:none;font-family:inherit}
+textarea{border-radius:20px;min-height:110px;font-size:12px;font-family:ui-monospace,Menlo,monospace;resize:vertical}
+input:focus,textarea:focus{border-color:var(--accent)}
+.btn{width:100%;margin-top:14px;padding:14px;border:0;border-radius:99px;background:linear-gradient(145deg,var(--accent2),var(--accent));color:#fff;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 8px 20px -8px var(--accent)}
+.btn.ghost{background:var(--glass);color:var(--text);box-shadow:none;border:1px solid var(--edge);margin-top:8px}
+.btn.red{background:var(--danger)}
+video{width:100%;border-radius:24px;background:#000;aspect-ratio:1/1;object-fit:cover}
+.hint{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5;padding:0 4px}
+.err{color:var(--danger);font-size:13px;margin-top:10px;min-height:16px;padding:0 4px}
+h2{font-size:13px;color:var(--muted);font-weight:600;margin:20px 4px 4px;text-transform:uppercase;letter-spacing:.6px}
+.toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg2);padding:10px 18px;border-radius:99px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:60}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.status{display:flex;align-items:center;gap:8px;font-size:13px;margin:8px 4px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}.dot.on{background:#4ac28b}
+</style>
+</head>
+<body>
+<div class="bg"><i></i><i></i><i></i></div>
+<div class="wrap">
+  <header>
+    <div class="brand"><div class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5L16 9.5"/></svg></div><h1>Qono Verify</h1></div>
+    <button class="icon glass" id="gear" aria-label="Ayarlar">⚙</button>
+  </header>
+  <div id="list"></div>
+</div>
+<button class="fab" id="add" aria-label="Hesap ekle">+</button>
+
+<div class="modal" id="modal"><div class="sheet">
+  <h1>Hesap ekle</h1>
+  <div class="tabs"><button data-t="cam" class="on">Kamera</button><button data-t="img">QR görseli</button><button data-t="man">Elle gir</button></div>
+  <div class="pane on" id="p-cam"><video id="vid" playsinline muted></video><div class="hint">QR kodu kameraya göster.</div></div>
+  <div class="pane" id="p-img"><input type="file" id="file" accept="image/*" style="border-radius:20px"><div class="hint">QR kodun ekran görüntüsünü seç.</div></div>
+  <div class="pane" id="p-man">
+    <label>Ad</label><input id="m-name" autocomplete="off" placeholder="Örn. Google">
+    <label>Anahtar</label><input id="m-sec" autocomplete="off" placeholder="Herhangi bir uzunlukta">
+    <button class="btn" id="m-save">Kaydet</button>
+  </div>
+  <div class="err" id="err"></div>
+  <button class="btn ghost" id="close">Kapat</button>
+</div></div>
+
+<div class="modal" id="settings"><div class="sheet">
+  <h1>Ayarlar</h1>
+  <h2>Güvenlik</h2>
+  <div id="sec"></div>
+  <h2>Yedek</h2>
+  <button class="btn ghost" id="go-exp">Dışa aktar</button>
+  <button class="btn ghost" id="go-imp">İçe aktar</button>
+  <div id="io"></div>
+  <div class="err" id="err2"></div>
+  <button class="btn ghost" id="close2">Kapat</button>
+</div></div>
+
+<div class="modal full" id="lock"><div class="sheet">
+  <div class="logo" style="width:64px;height:64px;margin:6px auto 14px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="3"/><path d="M8 11V8a4 4 0 018 0v3"/></svg></div>
+  <h1>Kilit açık değil</h1>
+  <div class="hint" style="margin-bottom:12px">Şifreni veya yedek şifreni gir.</div>
+  <input type="password" id="lk-pw" placeholder="Şifre" style="text-align:center">
+  <div class="err" id="lk-err"></div>
+  <button class="btn" id="lk-go">Aç</button>
+</div></div>
+<div class="toast" id="toast"></div>
+<canvas id="cv" style="display:none"></canvas>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script>
+const KEY='qono_v2';
+let accounts=[],dek=null,dkey=null,wraps={pw:null,rec:null},pending=null;
+const $=id=>document.getElementById(id);
+const te=new TextEncoder();
+const b64=u=>btoa(String.fromCharCode(...new Uint8Array(u)));
+const ub=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('show'),1700)}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+/* şifreleme: PBKDF2 -> AES-GCM. Şifre hiçbir yerde saklanmaz. */
+async function dk(pw,s){const b=await crypto.subtle.importKey('raw',te.encode(pw),'PBKDF2',false,['deriveKey']);
+ return crypto.subtle.deriveKey({name:'PBKDF2',salt:s,iterations:250000,hash:'SHA-256'},b,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
+async function encObj(obj,key,s){const iv=crypto.getRandomValues(new Uint8Array(12));
+ const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,te.encode(JSON.stringify(obj)));
+ return{enc:true,v:2,salt:b64(s),iv:b64(iv),ct:b64(ct)}}
+async function decObj(d,pw){const s=ub(d.salt),k=await dk(pw,s);
+ const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:ub(d.iv)},k,ub(d.ct));
+ return{obj:JSON.parse(new TextDecoder().decode(pt)),key:k,salt:s}}
+function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('qono_verify',1);r.onupgradeneeded=()=>r.result.createObjectStore('v');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function idbSet(s){const d=await idb();return new Promise((res,rej)=>{const t=d.transaction('v','readwrite');t.objectStore('v').put(s,'vault');t.oncomplete=res;t.onerror=()=>rej(t.error)})}
+async function idbGet(){const d=await idb();return new Promise((res,rej)=>{const q=d.transaction('v').objectStore('v').get('vault');q.onsuccess=()=>res(q.result||null);q.onerror=()=>rej(q.error)})}
+const rnd=n=>crypto.getRandomValues(new Uint8Array(n));
+async function wrapDek(pw){const s=rnd(16),k=await dk(pw,s),iv=rnd(12);const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},k,dek);return{salt:b64(s),iv:b64(iv),ct:b64(ct)}}
+const impDek=raw=>crypto.subtle.importKey('raw',raw,'AES-GCM',false,['encrypt','decrypt']);
+async function openV3(d,pw){for(const w of [d.pw,d.rec]){if(!w)continue;try{const k=await dk(pw,ub(w.salt));
+ const raw=new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv:ub(w.iv)},k,ub(w.ct)));const key=await impDek(raw);
+ const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:ub(d.iv)},key,ub(d.ct));
+ return{obj:JSON.parse(new TextDecoder().decode(pt)),raw,key,w:{pw:d.pw||null,rec:d.rec||null}}}catch(e){}}throw new Error('x')}
+async function buildVault(){if(!dek)return{enc:false,v:3,accounts};const iv=rnd(12);
+ const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},dkey,te.encode(JSON.stringify(accounts)));
+ return{enc:true,v:3,iv:b64(iv),ct:b64(ct),pw:wraps.pw,rec:wraps.rec}}
+/* her kayıt cihazda iki ayrı depoya yazılır: localStorage + IndexedDB */
+async function persist(){let ok=false;try{const o=await buildVault();o.t=Date.now();const s=JSON.stringify(o);
+ try{localStorage.setItem(KEY,s);ok=true}catch(e){}try{await idbSet(s);ok=true}catch(e){}}catch(e){}
+ if(!ok)toast('Kayıt başarısız')}
+
+/* TOTP */
+function b32(s){const A='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';s=s.toUpperCase().replace(/=+$/,'');let bits='',o=[];
+ for(const c of s){const i=A.indexOf(c);if(i<0)throw 0;bits+=i.toString(2).padStart(5,'0')}
+ for(let i=0;i+8<=bits.length;i+=8)o.push(parseInt(bits.slice(i,i+8),2));if(!o.length)throw 0;return new Uint8Array(o)}
+function keyBytes(s){s=s.replace(/\s/g,'');if(/^[A-Za-z2-7]+=*$/.test(s)){try{return b32(s)}catch(e){}}return te.encode(s)}
+async function totp(a,now){
+ const step=Math.floor(now/1000/a.period),buf=new ArrayBuffer(8),dv=new DataView(buf);
+ dv.setUint32(0,Math.floor(step/4294967296));dv.setUint32(4,step>>>0);
+ const hash={SHA1:'SHA-1',SHA256:'SHA-256',SHA512:'SHA-512'}[a.algo]||'SHA-1';
+ const k=await crypto.subtle.importKey('raw',keyBytes(a.secret),{name:'HMAC',hash},false,['sign']);
+ const h=new Uint8Array(await crypto.subtle.sign('HMAC',k,buf)),o=h[h.length-1]&15;
+ return String(((h[o]&127)<<24|h[o+1]<<16|h[o+2]<<8|h[o+3])%Math.pow(10,a.digits)).padStart(a.digits,'0')}
+const fmt=c=>{const m=Math.ceil(c.length/2);return c.slice(0,m)+' '+c.slice(m)};
+const C=2*Math.PI*14;
+
+/* liste */
+function render(){
+ const L=$('list');
+ if(!accounts.length){L.innerHTML='<div class="empty"><div class="av big">+</div>Henüz hesap yok.<br>Sağ alttaki + ile ekle.</div>';return}
+ L.innerHTML=accounts.map(a=>`<div class="item glass" data-id="${a.id}"><div class="av">${esc((a.issuer||a.name||'?')[0].toUpperCase())}</div>
+ <div class="info"><div class="iss">${esc(a.issuer||a.name)}</div>${a.issuer&&a.name?`<div class="nm">${esc(a.name)}</div>`:''}<div class="code" id="c-${a.id}">••• •••</div><div class="next" id="n-${a.id}"></div></div>
+ <div class="side"><div class="ring"><svg viewBox="0 0 34 34"><circle class="bgc" cx="17" cy="17" r="14"/><circle class="fg" id="r-${a.id}" cx="17" cy="17" r="14" stroke-dasharray="${C}"/></svg><span id="s-${a.id}"></span></div><button class="del" data-del="${a.id}">Sil</button></div></div>`).join('');
+ tick(true)}
+const last={};
+async function tick(force){
+ const now=Date.now();
+ for(const a of accounts){
+  const el=$('c-'+a.id);if(!el)continue;
+  const step=Math.floor(now/1000/a.period),left=a.period-((now/1000)%a.period);
+  const r=$('r-'+a.id),s=$('s-'+a.id);
+  if(r){r.style.strokeDashoffset=C*(1-left/a.period);r.style.stroke=left<=5?'var(--danger)':''}
+  if(s)s.textContent=Math.ceil(left);
+  el.classList.toggle('warn',left<=5);
+  if(force||last[a.id]!==step){try{el.textContent=fmt(await totp(a,now));const nx=$('n-'+a.id);if(nx)nx.textContent='Sıradaki '+fmt(await totp(a,now+a.period*1000));last[a.id]=step}catch(e){el.textContent='Hata'}}
+ }}
+setInterval(()=>tick(false),500);
+$('list').addEventListener('click',e=>{
+ const d=e.target.closest('[data-del]');
+ if(d){e.stopPropagation();
+  if(d.classList.contains('sure')){accounts=accounts.filter(a=>a.id!==d.dataset.del);persist();render();toast('Silindi')}
+  else{d.classList.add('sure');d.textContent='Emin misin?';setTimeout(()=>{d.classList.remove('sure');d.textContent='Sil'},2500)}
+  return}
+ const it=e.target.closest('.item');if(!it)return;
+ const c=$('c-'+it.dataset.id).textContent.replace(/\s/g,'');
+ try{navigator.clipboard.writeText(c).then(()=>toast('Kod kopyalandı'),()=>toast(c))}catch(_){toast(c)}});
+
+/* ekleme */
+function parseInput(text,name){
+ text=text.trim();const a={issuer:'',name:(name||'').trim(),secret:'',digits:6,period:30,algo:'SHA1'};
+ if(/^otpauth:\/\//i.test(text)){
+  const u=new URL(text);if(u.host.toLowerCase()!=='totp')throw new Error('Yalnızca zaman tabanlı kodlar destekleniyor');
+  let l=decodeURIComponent(u.pathname.replace(/^\//,'')),li='';
+  if(l.includes(':')){li=l.split(':')[0].trim();l=l.split(':').slice(1).join(':').trim()}
+  a.name=u.searchParams.get('issuer')||li||l;a.secret=u.searchParams.get('secret')||'';
+  a.digits=parseInt(u.searchParams.get('digits'))||6;a.period=parseInt(u.searchParams.get('period'))||30;
+  a.algo=(u.searchParams.get('algorithm')||'SHA1').toUpperCase();
+ }else a.secret=text;
+ a.secret=a.secret.replace(/\s/g,'');
+ if(!a.name)throw new Error('Bir ad gir');
+ if(!a.secret)throw new Error('Anahtar boş olamaz');
+ a.id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);return a}
+async function addAcc(a){accounts.push(a);await persist();closeModal();render();toast('Hesap eklendi')}
+let stream=null,scanning=false;
+function openModal(){$('modal').classList.add('open');$('err').textContent='';setTab('cam')}
+function closeModal(){$('modal').classList.remove('open');stopCam()}
+function stopCam(){scanning=false;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}$('vid').srcObject=null}
+function setTab(t){document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+ document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==='p-'+t));$('err').textContent='';stopCam();if(t==='cam')startCam()}
+async function startCam(){try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+ const v=$('vid');v.srcObject=stream;await v.play();scanning=true;scan()}catch(e){$('err').textContent='Kamera açılamadı. QR görseli veya elle girişi dene.'}}
+function scan(){if(!scanning)return;const v=$('vid'),c=$('cv');
+ if(v.videoWidth){c.width=v.videoWidth;c.height=v.videoHeight;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(v,0,0);
+  const d=x.getImageData(0,0,c.width,c.height),r=window.jsQR&&jsQR(d.data,d.width,d.height);
+  if(r&&r.data){try{addAcc(parseInput(r.data));return}catch(e){$('err').textContent=e.message}}}
+ requestAnimationFrame(scan)}
+$('file').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const img=new Image();
+ img.onload=()=>{const c=$('cv');c.width=img.width;c.height=img.height;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0);
+  const d=x.getImageData(0,0,c.width,c.height),r=window.jsQR&&jsQR(d.data,d.width,d.height);
+  if(!r){$('err').textContent='Görselde QR kod bulunamadı';return}
+  try{addAcc(parseInput(r.data))}catch(er){$('err').textContent=er.message}};img.src=URL.createObjectURL(f)});
+$('m-save').addEventListener('click',()=>{try{addAcc(parseInput($('m-sec').value,$('m-name').value));$('m-name').value=$('m-sec').value=''}catch(e){$('err').textContent=e.message}});
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.t)));
+$('add').onclick=openModal;$('close').onclick=closeModal;
+$('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
+
+/* ayarlar */
+function secUI(){
+ let h='<div class="hint">Hesaplar cihazda otomatik olarak iki ayrı depoya kaydedilir.</div>';
+ if(!dek)h+=`<div class="status"><span class="dot"></span>Şifre yok (isteğe bağlı)</div>
+  <label>Yeni şifre</label><input type="password" id="n1" autocomplete="new-password"><label>Tekrar</label><input type="password" id="n2" autocomplete="new-password">
+  <button class="btn" id="b-set">Şifreli saklamayı aç</button>`;
+ else{h+=`<div class="status"><span class="dot on"></span>Şifreli saklama açık</div>
+  <div class="hint">Şifreler hiçbir yerde saklanmaz, anahtarlar şifrenle şifrelenir. İkisini de unutursan verilere ulaşılamaz.</div>
+  <button class="btn ghost" id="b-lock">Şimdi kilitle</button><button class="btn ghost" id="b-rm">Şifreyi kaldır</button><h2>Yedek şifre</h2>`;
+  h+=wraps.rec?`<div class="status"><span class="dot on"></span>Yedek şifre tanımlı</div><div class="hint">Ana şifreni unutursan bu şifre de hesapları açar.</div><button class="btn ghost" id="b-rrm">Yedek şifreyi kaldır</button>`
+  :`<div class="hint">İsteğe bağlı. Ana şifreni unutursan bu şifre de kilidi açar.</div><label>Yedek şifre</label><input type="password" id="r1" autocomplete="new-password"><button class="btn" id="b-radd">Yedek şifre ekle</button>`}
+ $('sec').innerHTML=h;
+ if(!dek){$('b-set').onclick=async()=>{const p=$('n1').value;if(!p){$('err2').textContent='Şifre gir';return}
+  if(p!==$('n2').value){$('err2').textContent='Şifreler eşleşmiyor';return}
+  dek=rnd(32);dkey=await impDek(dek);wraps={pw:await wrapDek(p),rec:null};await persist();$('err2').textContent='';secUI();toast('Şifreli saklama açıldı')}}
+ else{$('b-lock').onclick=lockNow;
+  $('b-rm').onclick=function(){if(!this.classList.contains('red')){this.classList.add('red');this.textContent='Emin misin? Tekrar dokun';return}
+   dek=null;dkey=null;wraps={pw:null,rec:null};persist();secUI();toast('Şifre kaldırıldı')};
+  if(wraps.rec)$('b-rrm').onclick=async()=>{wraps.rec=null;await persist();secUI();toast('Yedek şifre kaldırıldı')};
+  else $('b-radd').onclick=async()=>{const r=$('r1').value;if(!r){$('err2').textContent='Yedek şifre gir';return}
+   wraps.rec=await wrapDek(r);await persist();$('err2').textContent='';secUI();toast('Yedek şifre eklendi')}}}
+function openSettings(){$('settings').classList.add('open');$('io').innerHTML='';$('err2').textContent='';secUI()}
+$('gear').onclick=openSettings;$('close2').onclick=()=>$('settings').classList.remove('open');
+$('settings').addEventListener('click',e=>{if(e.target.id==='settings')$('settings').classList.remove('open')});
+
+$('go-exp').onclick=()=>{$('err2').textContent='';
+ $('io').innerHTML=`<label>Yedek şifresi (isteğe bağlı)</label><input type="password" id="x-pw" placeholder="Boşsa ${dek?'mevcut şifrelerle şifreli':'şifresiz'}"><button class="btn" id="x-go">Yedeği oluştur</button><div id="x-out"></div>`;
+ $('x-go').onclick=async()=>{const pw=$('x-pw').value;let o;
+  if(pw){const s=rnd(16);o=await encObj(accounts,await dk(pw,s),s)}
+  else o=await buildVault();
+  $('x-out').innerHTML=`<textarea id="x-t" readonly></textarea><div class="hint">${o.enc?'Bu yedek şifrelidir.':'Dikkat: bu yedek şifresizdir, güvenli bir yere kaydet.'} Metni kopyalayıp bir notta sakla.</div><button class="btn" id="x-cp">Kopyala</button>`;
+  $('x-t').value=JSON.stringify(o);$('x-cp').onclick=()=>{$('x-t').select();try{navigator.clipboard.writeText($('x-t').value).then(()=>toast('Kopyalandı'))}catch(e){document.execCommand('copy');toast('Kopyalandı')}}}};
+$('go-imp').onclick=()=>{$('err2').textContent='';
+ $('io').innerHTML=`<label>Yedek metni</label><textarea id="i-t"></textarea><label>Yedek şifresi (şifreliyse)</label><input type="password" id="i-pw"><button class="btn" id="i-go">İçe aktar</button>`;
+ $('i-go').onclick=async()=>{try{const d=JSON.parse($('i-t').value.trim());let list;
+  if(d.enc)list=d.v===3?(await openV3(d,$('i-pw').value)).obj:(await decObj(d,$('i-pw').value)).obj;else list=d.accounts;
+  if(!Array.isArray(list))throw 0;let n=0;
+  for(const a of list){if(!a||!a.secret||!(a.name||a.issuer))continue;if(accounts.some(x=>x.secret===a.secret&&x.name===a.name&&x.issuer===a.issuer))continue;
+   accounts.push({issuer:a.issuer||'',name:a.name||'',secret:a.secret,digits:a.digits||6,period:a.period||30,algo:a.algo||'SHA1',id:Date.now().toString(36)+Math.random().toString(36).slice(2,6)});n++}
+  await persist();render();$('io').innerHTML='';toast(n+' hesap eklendi')}catch(e){$('err2').textContent='Yedek okunamadı veya şifre yanlış'}}};
+
+/* kilit */
+function lockNow(){accounts=[];dek=null;dkey=null;wraps={pw:null,rec:null};$('settings').classList.remove('open');boot()}
+async function unlock(){const pw=$('lk-pw').value;$('lk-err').textContent='';
+ try{if(pending.v===3){const r=await openV3(pending,pw);accounts=r.obj;dek=r.raw;dkey=r.key;wraps=r.w}
+  else{const r=await decObj(pending,pw);accounts=r.obj;dek=rnd(32);dkey=await impDek(dek);wraps={pw:await wrapDek(pw),rec:null};await persist()}
+  $('lk-pw').value='';$('lock').classList.remove('open');render()}
+ catch(e){$('lk-err').textContent='Şifre yanlış'}}
+$('lk-go').onclick=unlock;$('lk-pw').addEventListener('keydown',e=>{if(e.key==='Enter')unlock()});
+async function boot(){let a=null,b=null;
+ try{a=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
+ try{const s=await idbGet();b=s?JSON.parse(s):null}catch(e){}
+ const raw=a&&b?((b.t||0)>(a.t||0)?b:a):(a||b);
+ if(raw&&(!a||!b)){try{const s=JSON.stringify(raw);if(!a)localStorage.setItem(KEY,s);if(!b)await idbSet(s)}catch(e){}}
+ try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
+ if(!raw){try{accounts=JSON.parse(localStorage.getItem('qono_verify_accounts')||'[]')||[]}catch(e){accounts=[]}if(accounts.length)await persist();render();return}
+ if(raw.enc){pending=raw;$('lock').classList.add('open')}else{accounts=raw.accounts||[];render()}}
+boot();
+</script>
+</body>
+</html>
