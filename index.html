@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -130,6 +131,17 @@ const ub=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('show'),1700)}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 
+/* URL sonuna /qw/?(kod) gelirse yakala ve adres çubuğunu temizle */
+let pendingUrlSecret=(()=>{
+  if(!/\/qw\/?$/i.test(location.pathname)||location.search.length<=1)return null;
+  let q=location.search.slice(1);
+  try{q=decodeURIComponent(q)}catch(_){}
+  q=q.trim();
+  if(/^(secret|code|key)=/i.test(q))q=q.split('=').slice(1).join('=').trim();
+  try{history.replaceState(null,'',location.pathname.replace(/\/qw\/?$/i,'/'))}catch(_){}
+  return q||null;
+})();
+
 /* şifreleme: PBKDF2 -> AES-GCM. Şifre hiçbir yerde saklanmaz. */
 async function dk(pw,s){const b=await crypto.subtle.importKey('raw',te.encode(pw),'PBKDF2',false,['deriveKey']);
  return crypto.subtle.deriveKey({name:'PBKDF2',salt:s,iterations:250000,hash:'SHA-256'},b,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
@@ -219,6 +231,27 @@ function parseInput(text,name){
  if(!a.secret)throw new Error('Anahtar boş olamaz');
  a.id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);return a}
 async function addAcc(a){accounts.push(a);await persist();closeModal();render();toast('Hesap eklendi')}
+
+/* URL'den gelen /qw/?KOD anahtarını "Fixing ID doğrulama kodu" olarak kaydet */
+async function applyUrlSecret(){
+  if(!pendingUrlSecret)return;
+  const raw=pendingUrlSecret;
+  pendingUrlSecret=null;
+  try{
+    const acc=parseInput(raw,'Fixing ID doğrulama kodu');
+    acc.issuer='';
+    acc.name='Fixing ID doğrulama kodu';
+    if(!accounts.some(x=>x.secret===acc.secret&&x.name===acc.name)){
+      accounts.push(acc);
+      await persist();
+      render();
+      toast('Fixing ID doğrulama kodu eklendi');
+    }
+  }catch(e){
+    toast(e.message||'Geçersiz doğrulama kodu');
+  }
+}
+
 let stream=null,scanning=false;
 function openModal(){$('modal').classList.add('open');$('err').textContent='';setTab('cam')}
 function closeModal(){$('modal').classList.remove('open');stopCam()}
@@ -288,7 +321,7 @@ function lockNow(){accounts=[];dek=null;dkey=null;wraps={pw:null,rec:null};$('se
 async function unlock(){const pw=$('lk-pw').value;$('lk-err').textContent='';
  try{if(pending.v===3){const r=await openV3(pending,pw);accounts=r.obj;dek=r.raw;dkey=r.key;wraps=r.w}
   else{const r=await decObj(pending,pw);accounts=r.obj;dek=rnd(32);dkey=await impDek(dek);wraps={pw:await wrapDek(pw),rec:null};await persist()}
-  $('lk-pw').value='';$('lock').classList.remove('open');render()}
+  $('lk-pw').value='';$('lock').classList.remove('open');render();await applyUrlSecret()}
  catch(e){$('lk-err').textContent='Şifre yanlış'}}
 $('lk-go').onclick=unlock;$('lk-pw').addEventListener('keydown',e=>{if(e.key==='Enter')unlock()});
 async function boot(){let a=null,b=null;
@@ -297,8 +330,8 @@ async function boot(){let a=null,b=null;
  const raw=a&&b?((b.t||0)>(a.t||0)?b:a):(a||b);
  if(raw&&(!a||!b)){try{const s=JSON.stringify(raw);if(!a)localStorage.setItem(KEY,s);if(!b)await idbSet(s)}catch(e){}}
  try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
- if(!raw){try{accounts=JSON.parse(localStorage.getItem('qono_verify_accounts')||'[]')||[]}catch(e){accounts=[]}if(accounts.length)await persist();render();return}
- if(raw.enc){pending=raw;$('lock').classList.add('open')}else{accounts=raw.accounts||[];render()}}
+ if(!raw){try{accounts=JSON.parse(localStorage.getItem('qono_verify_accounts')||'[]')||[]}catch(e){accounts=[]}if(accounts.length)await persist();render();await applyUrlSecret();return}
+ if(raw.enc){pending=raw;$('lock').classList.add('open')}else{accounts=raw.accounts||[];render();await applyUrlSecret()}}
 boot();
 </script>
 </body>
